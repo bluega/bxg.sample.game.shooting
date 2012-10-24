@@ -21,7 +21,7 @@ IFighterManager = {
 		obj.data.speed = bxg.game.adjustByTick(40, 8, true); // at a speed of 8 pixel per 40ms tick interval.
 		obj.data.life = 100;
 		
-		bxg.player.show();
+		obj.show();
 	}
 	,onTick: function(/*Object*/obj, /*Number*/tickId)
 	{
@@ -127,7 +127,7 @@ IBossManager = {
 			obj.data.dy = 0;
 			break;
 		case 2: // Dash forward
-			obj.data.dy = bxg.game.adjustByTick(40, 10, true);;
+			obj.data.dy = bxg.game.adjustByTick(40, 10, true);
 			break;
 		}
 		
@@ -308,7 +308,8 @@ IScrollManager = {
 				obj.activate();
 				
 				// Create base
-				var base = new bxg.CImageObject('cannonBase', {baseLayer:true, zIndex:10});
+				var base = bxg.ObjectFactory.build('img.cannonBase', {baseLayer:true, zIndex:10});
+				
 				control.add(base);
 				base.move(obj.position().x+17, obj.position().y+17);
 
@@ -330,7 +331,7 @@ IScrollManager = {
 			control.data.map.objs.sort(function(a, b){return (b.y+b.h) - (a.y+a.h);});
 			
 			// Create & set background pattern
-			control.data.background = new bxg.CImageObject(control.data.map.bg, {baseLayer:true, zIndex:0, pattern:true});
+			control.data.background = new bxg.CImage(control.data.map.bg, {baseLayer:true, zIndex:0, pattern:true});
 			bxg.g.ctlLand.add(control.data.background);
 			
 			// Create & set tile
@@ -520,43 +521,44 @@ bxg.onGame = function ()
 			,info:{
 				sprites:{
 					body:{
-						sprite:{normal:['bossN_1']}
+						sprite:{flying:['bossN_1']}
 						,offset:{left:0, top:46}
 					},
 					down:{
-						sprite:{normal:['bossB1_1', 'bossB1_2', 'bossB1_3']}
+						sprite:{spin:['bossB1_1', 'bossB1_2', 'bossB1_3']}
 						,offset:{left:43, top:114}
 					},
 					up:{
-						sprite:{normal:['bossB2_1', 'bossB2_2', 'bossB2_3']}
+						sprite:{spin:['bossB2_1', 'bossB2_2', 'bossB2_3']}
 						,offset:{left:43, top:66}
 					},
 					booster:{
-						sprite:{normal:['bossBT_1', 'bossBT_2']}
+						sprite:{blazing:['bossBT_1', 'bossBT_2']}
 						,offset:{left:50, top:0}
 					},
 					damageEffect:{
-						sprite:{normal:['bossD_2'],	dmg:['bossD_1', 'bossD_2', 'bossD_1', 'bossD_1']}
+						sprite:{normal:['bossD_2'],
+								dmg:['bossD_1', 'bossD_2', 'bossD_1', 'bossD_1']
+						}
 						,speed:Math.ceil(10/bxg.game.adjustByTick(40, 2))
-						,loop:true
 						,offset:{left:0, top:46}
+						,zIndex:1		// Sprite's zIndex value within game object
 					}
 				}
 				,states:{
 					normal:{
 						config:{
-							body:{group:'normal'},
-							down:{group:'normal'},
-							up:{group:'normal'},
-							booster:{group:'normal'},
+							body:{group:'flying'},
+							down:{group:'spin'},
+							up:{group:'spin'},
+							booster:{group:'blazing'},
 							damageEffect:{group:'normal'}
 						}
 					},
 					damage:{
 						config:{
-							damageEffect:{group:'dmg'}
+							damageEffect:{group:['dmg', 'normal']}
 						}
-						,cdShape:[{rect:{x:18, y:0, w:80, h:180}}]
 					}
 				}
 			}
@@ -564,7 +566,7 @@ bxg.onGame = function ()
 				manager:IBossManager
 				,cdShape:[{rect:{x:18, y:0, w:80, h:180}}]
 				,size:{w:116, h:195}
-				,zIndex:10
+				,zIndex:10		// Object's zIndex value within game control
 			}
 		}
 		,{
@@ -599,20 +601,26 @@ bxg.onGame = function ()
 				manager:ILaserShotManager
 				,cdShape:[{rect:{x:10, y:5, w:9, h:70}}]
 				,zIndex:21
-				//,sprite:{speed:Math.ceil(8/bxg.game.adjustByTick(40, 4))}
+				,sprite:{speed:Math.ceil(8/bxg.game.adjustByTick(40, 4))}
 			}
 		}
 		,{
-			className:'bxg.CImageObject'
+			className:'bxg.CImage'
+			,type:'img.crack'
+			,imagePath:'imgs/bg/desert/'
+			,info:'crack.png'
+		}
+		,{
+			className:'bxg.CImage'
 			,type:'img.bush'
 			,imagePath:'imgs/bg/desert/'
 			,info:'trees.png'
 		}
 		,{
-			className:'bxg.CImageObject'
-			,type:'img.crack'
-			,imagePath:'imgs/bg/desert/'
-			,info:'crack.png'
+			className:'bxg.CImage'
+			,type:'img.cannonBase'
+			,imagePath:'imgs/cannon/'
+			,info:'base.png'
 		}
 	];
 	
@@ -622,7 +630,7 @@ bxg.onGame = function ()
 	}
 	
 	// Load image resource of ObjectFactory-managed game objects
-	bxg.ObjectFactory.load(['obj.cannon', 'obj.boss', 'obj.bossShot', 'obj.fighterShot', 'img.bush', 'img.crack'], onLoadObjects);
+	bxg.ObjectFactory.load(['obj.cannon', 'obj.boss', 'obj.bossShot', 'obj.fighterShot', 'img.bush', 'img.crack', 'img.cannonBase'], onLoadObjects);
 }
 
 function onLoadObjects(/*Number*/loaded, /*Number*/failed)
@@ -640,7 +648,6 @@ function onLoadObjects(/*Number*/loaded, /*Number*/failed)
 			,fighterR2_:{url:'imgs/fighter/right2_$$.png', count:2, start:1}
 			,fighterR3_:{url:'imgs/fighter/right3_$$.png', count:2, start:1}
 			,fighterR4_:{url:'imgs/fighter/right4_$$.png', count:2, start:1}
-			,cannonBase:{url:'imgs/cannon/base.png'}
 			,bullet:{url:'imgs/shot/cannon.png'}
 			,background:{url:'imgs/bg/desert/bg.jpg'}
 		},
