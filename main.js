@@ -3,6 +3,7 @@
 /*
 	Objectives:
 		Controlling C1WayBufferedScrollControl
+		Using CAccelerometerDevice and CTabDevice
 */
 "Copyright ⓒ 2009-2012 BLUEGA Inc.";
 "This sample game source is licensed under the MIT license."
@@ -18,7 +19,7 @@ IFighterManager = {
 		obj.data.dx = 0;
 		obj.data.dxPrev = 0;
 		obj.data.overScr = {};
-		obj.data.speed = bxg.game.adjustByTick(40, 8, true); // at a speed of 8 pixel per 40ms tick interval.
+		obj.data.speed = bxg.game.adjustByTick(30, 8, true) || 1; // at a speed of 8 pixel per 30ms tick interval.
 		obj.data.life = 100;
 		
 		obj.show();
@@ -50,7 +51,7 @@ IFighterManager = {
 	,onCollision: function(/*Object*/obj, /*Object*/hit)
 	{
 		if (hit.type == 'obj.bullet' || hit.type == 'obj.bossShot'){
-			bxg.shake(6, bxg.game.tickInterval, 3, 'v');
+			//bxg.shake(6, bxg.game.tickInterval, 3, 'v');
 			obj.data.life--;
 		}
 		if(!obj.data.life) {
@@ -111,7 +112,7 @@ IBossManager = {
 		case 0: // Move forward(downward)
 			if (!obj.data.nextStateTick) obj.data.nextStateTick = bxg.game.tickAfter(tickId, 1200+Math.random()*400);
 			
-			obj.data.dy = bxg.game.adjustByTick(40, 6, true);
+			obj.data.dy = bxg.game.adjustByTick(30, 6, true) || 1;
 			break;
 		case 1: // Attack(fire)
 			if (!obj.data.nextStateTick) obj.data.nextStateTick = bxg.game.tickAfter(tickId, 16000); // 16sec
@@ -127,7 +128,7 @@ IBossManager = {
 			obj.data.dy = 0;
 			break;
 		case 2: // Dash forward
-			obj.data.dy = bxg.game.adjustByTick(40, 10, true);
+			obj.data.dy = bxg.game.adjustByTick(30, 10, true) || 1;
 			break;
 		}
 		
@@ -166,7 +167,7 @@ IBossManager = {
 IBulletManager = {
 	onActivate: function(/*Object*/obj, /*Number*/tickId)
 	{
-		obj.data.speed = bxg.game.adjustByTick(40, 10, true);
+		obj.data.speed = bxg.game.adjustByTick(30, 10, true) || 1;
 		
 		// Canculate angle and set position to the tip of barrel
 		// In obj.data.launcher.center(true), 'true' means that it needs to be transformed to view coordinate system.
@@ -200,7 +201,7 @@ IBulletManager = {
 IDownShotManager = {
 	onActivate: function(/*Object*/obj, /*Number*/tickId)
 	{
-		obj.data.speed = bxg.game.adjustByTick(40, 12, true);
+		obj.data.speed = bxg.game.adjustByTick(30, 12, true) || 1;
 		obj.move(obj.data.launcher.center(true).x-obj.size.w/2, obj.data.launcher.position().y+obj.data.launcher.size.h);
 		obj.show();
 	}
@@ -226,7 +227,7 @@ IDownShotManager = {
 ILaserShotManager = {
 	onActivate: function(/*Object*/obj, /*Number*/tickId)
 	{
-		obj.data.speed = bxg.game.adjustByTick(40, 12, true);
+		obj.data.speed = bxg.game.adjustByTick(30, 12, true) || 1;
 
 		obj.setCurSpriteState('shot1',true);
 		obj.queueSpriteState('shot2');
@@ -290,7 +291,7 @@ ILaserShotManager = {
 IScrollManager = {
 	onTick: function(/*CControl*/control, /*Number*/tickId)
 	{
-		control.scroll(0, 5);
+		control.scroll(0, Math.max(1, bxg.game.adjustByTick(30, 1)));
 
 		// Create objects by map
 		while(control.data.map.objs[control.data.curMapDataPos] && (control.data.map.objs[control.data.curMapDataPos].y+control.data.map.objs[control.data.curMapDataPos].h) >= -control.scrollPos.y){
@@ -436,7 +437,7 @@ bxg.onGame = function ()
 	*/
 	
 	bxg.c.render = bx.$getParamFromURL(location.href, 'RD') || 'canvas';
-	bxg.c.tick = 40; //msec
+	bxg.c.tick = 30; //msec
 	bxg.c.countCannon = 20;
 	bxg.c.countBullet = 10;		// Shot by Cannon
 	bxg.c.countBulletBoss = 10;	// Shot by Boss
@@ -540,7 +541,7 @@ bxg.onGame = function ()
 						sprite:{normal:['bossD_2'],
 								dmg:['bossD_1', 'bossD_2', 'bossD_1', 'bossD_1']
 						}
-						,speed:Math.ceil(10/bxg.game.adjustByTick(40, 2))
+						,speed:Math.ceil(10/bxg.game.adjustByTick(30, 2))
 						,offset:{left:0, top:46}
 						,zIndex:1		// Sprite's zIndex value within game object
 					}
@@ -601,7 +602,7 @@ bxg.onGame = function ()
 				manager:ILaserShotManager
 				,cdShape:[{rect:{x:10, y:5, w:9, h:70}}]
 				,zIndex:21
-				,sprite:{speed:Math.ceil(8/bxg.game.adjustByTick(40, 4))}
+				,sprite:{speed:Math.ceil(8/bxg.game.adjustByTick(30, 4))}
 			}
 		}
 		,{
@@ -629,12 +630,25 @@ bxg.onGame = function ()
 		bxg.ObjectFactory.register(bxg.g.objs[obj]);
 	}
 	
+	// Example to get a progress status of image loading
+	function onProgress(/*Number*/countLoaded, /*Number*/countAll)
+	{
+		if (window.console) console.log('Image loaded '+countLoaded+'/'+countAll);
+	}
+	
 	// Load image resource of ObjectFactory-managed game objects
-	bxg.ObjectFactory.load(['obj.cannon', 'obj.boss', 'obj.bossShot', 'obj.fighterShot', 'img.bush', 'img.crack', 'img.cannonBase'], onLoadObjects);
+	bxg.ObjectFactory.load(['obj.cannon', 'obj.boss', 'obj.bossShot', 'obj.fighterShot', 'img.bush', 'img.crack', 'img.cannonBase'], onLoadObjects, onProgress);
+	
 }
 
 function onLoadObjects(/*Number*/loaded, /*Number*/failed)
 {
+	// Example to get a progress status of image loading
+	function onProgress(/*Number*/countLoaded, /*Number*/countAll)
+	{
+		if (window.console) console.log('Image loaded '+countLoaded+'/'+countAll);
+	}
+	
 	// Load image resouce for non-ObjectFactory-created Objects and Image objects (and HTML)
 	// This is asynchronous function
 	bxg.imageLoader.load(
@@ -651,14 +665,14 @@ function onLoadObjects(/*Number*/loaded, /*Number*/failed)
 			,bullet:{url:'imgs/shot/cannon.png'}
 			,background:{url:'imgs/bg/desert/bg.jpg'}
 		},
-		onReady
+		onReady, onProgress
 	);
 }
 
 function onReady(/*Number*/loaded, /*Number*/failed)
 {
-	bxg.g.ctlLand = new bxg.C1WayBufferedScrollControl(IScrollManager, {size:bxg.c.scrSize.h*bxg.c.countPane, dir:'down'}).create();
-	bxg.g.ctlSky = new bxg.CControl(ISkyControlManager, {zIndex:1}).create();
+	bxg.g.ctlLand = new bxg.C1WayBufferedScrollControl(IScrollManager, {size:bxg.c.scrSize.h*bxg.c.countPane, dir:'down'}, 'Land').create();
+	bxg.g.ctlSky = new bxg.CControl(ISkyControlManager, {zIndex:1}, 'Sky').create();
 	
 	// Create and add player object
 	// not by Object-factory
@@ -716,16 +730,14 @@ function onReady(/*Number*/loaded, /*Number*/failed)
 	bxg.g.poolBulletFighter.addToControl(bxg.g.ctlSky);
 	
 	// Add input device
-	//   CTouchArrowKeyDevice for touch device
+	//   CAccelerometerDevice and CTapDevice for touch device
 	//   CKeyDevice for PC
 	if (bx.HCL.DV.hasTouchEvent()){
-		bxg.game.addInputDevice(new bxg.CTouchArrowKeyDevice(
-			{
-				moveLeft:{offset:{x:-20}, type:'polling'}
-				,moveRight:{offset:{x:20}, type:'polling'}
-			}
-			,{multi:true}
-		));
+		bxg.game.addInputDevice(new bxg.CAccelerometerDevice({
+				moveLeft:{x:{max:-1, min:-10}, type:'event'},
+				moveRight:{x:{max:10, min:1}, type:'event'}
+			})
+		);
 		
 		bxg.game.addInputDevice(new bxg.CTapDevice({
 				fireShot:{area:{x:0, y:0, w:bxg.area.w, h:bxg.area.h}, type:'event'}
@@ -752,5 +764,7 @@ function onReady(/*Number*/loaded, /*Number*/failed)
 	bxg.game.addControl(bxg.g.ctlLand);
 	bxg.game.addControl(bxg.g.ctlSky);
 	bxg.game.run();
+	
+	bxg.Inspector.createConsole({consolePerformanceFull:true, consoleObjectFactory:true, consoleRenderer:true});
 }
 
